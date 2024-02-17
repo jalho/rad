@@ -1,0 +1,12 @@
+[submodule "rust-dedicated-server"]
+	path = rust-dedicated-server
+	url = git@github.com:jalho/rust-dedicated-server.git
+[submodule "rds-sync"]
+	path = rds-sync
+	url = git@github.com:jalho/rds-sync.git
+[submodule "rds-ui-web"]
+	path = rds-ui-web
+	url = git@github.com:jalho/rds-ui-web.git
+[submodule "rcon-cli"]
+	path = rcon-cli
+	url = git@github.com:jalho/rcon-cli.git

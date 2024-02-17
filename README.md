@@ -37,9 +37,9 @@ TODO.
 │   │   on game world map in real time.
 │   └── React web app written in TypeScript.
 ├── rust-dedicated-server
-│   ├── The video game server (RDS) instance, wrapped in helper service(s) that
-│   │   manage server updates, do health checks and automatic restarts etc.
-│   └── Service implented in Rust language and managed by _systemd_.
+│   └── The video game server (RDS) instance, wrapped in helper service(s) that
+│       manage server updates, do health checks and automatic restarts etc.
+│       using systemd.
 └── tls-reverse-proxy
     ├── Provides TLS for communication between web clients and rds-sync.
     └── Nginx instance.

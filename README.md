@@ -61,4 +61,13 @@ TODO.
 
 # Deploying
 
-TODO: document release contents and `make-release.sh` here...
+There's a bundle of compiled binaries and stuff in this GitHub repo's releases
+section. A new release bundle can be made using `make-release.sh`.
+
+Deploy a VM with at least 16 GB of RAM. RustDedicated requires that much. Then
+install all the stuff there.
+
+```
+wget https://raw.githubusercontent.com/jalho/DTEK2058-Advanced-Software-Project/master/install.sh
+bash install.sh
+```

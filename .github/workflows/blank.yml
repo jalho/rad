@@ -11,13 +11,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
+        with:
+          submodules: true
 
       - name: Run a multi-line script
         run: |
           pwd
           ls -laht
-          ls -laht rust-dedicated-server
-          git submodule update --init rust-dedicated-server/
           ls -laht rust-dedicated-server

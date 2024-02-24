@@ -19,3 +19,5 @@ jobs:
           pwd
           ls -laht
           ls -laht rust-dedicated-server
+          git submodule update --init rust-dedicated-server/
+          ls -laht rust-dedicated-server

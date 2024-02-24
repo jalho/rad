@@ -10,11 +10,13 @@ set -e
 
 useradd --create-home --shell /bin/bash --uid 1000 rust
 
-cd /home/rust/
+mkdir /home/rust/steamcmd/
+cd /home/rust/steamcmd/
 wget $DOWNLOAD_STEAMCMD
 tar -xzf ./steamcmd_linux.tar.gz
 rm ./steamcmd_linux.tar.gz
 
+cd /home/rust/
 wget $DOWNLOAD_MYSTUFF
 tar -xzf ./release.tgz
 rm ./release.tgz

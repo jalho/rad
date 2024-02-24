@@ -1,0 +1,5 @@
+#cloud-config
+
+runcmd:
+  - ["/bin/wget", "https://raw.githubusercontent.com/jalho/DTEK2058-Advanced-Software-Project/master/install.sh"]
+  - ["/bin/bash", "install.sh"]

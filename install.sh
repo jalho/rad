@@ -3,12 +3,14 @@
 DOWNLOAD_STEAMCMD="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 DOWNLOAD_MYSTUFF="https://github.com/jalho/DTEK2058-Advanced-Software-Project/releases/download/v0.1.0-alpha/release.tgz"
 
-INITIAL_WORKINGDIR=$(pwd)
-echo "DEBUG: INITIAL_WORKINGDIR is $INITIAL_WORKINGDIR"
-
 set -e
 
 useradd --create-home --shell /bin/bash --uid 1000 rust
+
+# SteamCMD dependencies
+dpkg --add-architecture i386
+apt-get update
+apt-get install lib32gcc-s1
 
 mkdir /home/rust/steamcmd/
 cd /home/rust/steamcmd/

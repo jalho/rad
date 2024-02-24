@@ -56,3 +56,9 @@ TODO.
 ## Estimated own contribution to the project in hours
 
 100 %
+
+---
+
+# Deploying
+
+TODO: document release contents and `make-release.sh` here...

@@ -71,3 +71,5 @@ install all the stuff there.
 wget https://raw.githubusercontent.com/jalho/DTEK2058-Advanced-Software-Project/master/install.sh
 bash install.sh
 ```
+
+I've been using Debian 12.

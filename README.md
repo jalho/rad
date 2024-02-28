@@ -29,9 +29,13 @@ TODO.
 │   ├── Tool for managing RDS.
 │   └── CLI program implemented in Rust language.
 ├── rds-sync
-│   ├── Server for synchronizing RDS state with web clients.
-│   ├── WebSocket server implemented in Rust language.
-│   └── TODO: add database?
+│   ├── WebSocket server for synchronizing RDS state with web clients.
+│   ├── TODO: Add a scheduled recurring job to select a new seed and do a "map
+│   │         wipe" weekly, and a "blueprint wipe" monthly.
+│   ├── TODO: Add a server state change bound Discord alert: use a webhook to
+│   │         send a message when server is starting, updating, dead etc.
+│   ├── TODO: Add database and store game statistics there.
+│   └── Implemented in Rust language.
 ├── rds-ui-web
 │   ├── Web frontend for rds-sync: shows RDS state, such as player positions
 │   │   on game world map in real time.

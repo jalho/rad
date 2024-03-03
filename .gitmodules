@@ -10,3 +10,6 @@
 [submodule "rcon-cli"]
 	path = rcon-cli
 	url = git@github.com:jalho/rcon-cli.git
+[submodule "rds-plugins"]
+	path = rds-plugins
+	url = git@github.com:jalho/rds-plugins.git

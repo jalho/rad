@@ -14,12 +14,27 @@ TODO.
 - **Rust (programming language)** = Language used for implementing some of the
   stuff in this project.
 
-- **Rust (video game)** = A survival game available on Steam.
+- **Rust (video game)** = A survival game available on Steam. Uses Unity game
+  engine.
 
 - **SteamCMD** = A program used to acquire game server programs for games played
   on _Steam_ platform.
 
 - **systemd** = A system for automating managing of services on Linux.
+
+- **Carbon** = A modding framework for the video game Rust.
+
+- **Unity** = The game engine used by the Rust game. It makes use of .NET and
+  is therefore easily moddable by patching relevant DLLs that in turn are easy
+  to make sense of because they can be decompiled into easily readable C Sharp
+  code. "Easy" as in as opposed to reverse engineering something that is not
+  inherently modding friendly.
+
+- **DLL** = Dynamically linked library, i.e. some executable code that some
+  other executable code calls to. Important characteristic for this project is
+  that these libraries can be recompiled with modifications on the fly, i.e.
+  while the caller is being run. This allows for easy modding of a video game
+  for example.
 
 ### Components
 
@@ -28,6 +43,10 @@ TODO.
 ├── rcon-cli
 │   ├── Tool for managing RDS.
 │   └── CLI program implemented in Rust language.
+├── rds-plugins
+│   ├── Carbon plugins, i.e. source code for Unity game engine .NET DLLs
+│   │   compatible for loading into RDS by the modding framework.
+│   └── C Sharp code.
 ├── rds-sync
 │   ├── WebSocket server for synchronizing RDS state with web clients.
 │   ├── TODO: Add a scheduled recurring job to select a new seed and do a "map

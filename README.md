@@ -16,7 +16,7 @@ TODO.
   project).
 
 - **Rust (video game)** = A survival game available on Steam. Uses Unity game
-  engine.
+  engine. The game is friendly to modding.
 
 - **SteamCMD** = A program used to acquire game server programs for games played
   on _Steam_ platform.
@@ -36,6 +36,13 @@ TODO.
   that these libraries can be recompiled with modifications on the fly, i.e.
   while the caller is being run. This allows for easy modding of a video game
   for example.
+
+- **.NET** = For the purposes of this project, this is a software framework
+  used by our game engine of interest, in a way that makes modding the game
+  relatively easy. Makes use of DLLs compiled from C Sharp code.
+
+- **C Sharp** = Language used for implementing some of the stuff in this
+  project.
 
 ### Components
 

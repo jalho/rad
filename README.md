@@ -12,7 +12,8 @@ TODO.
   distributed via _SteamCMD_.
 
 - **Rust (programming language)** = Language used for implementing some of the
-  stuff in this project.
+  stuff in this project, as opposed to the video game (also relevant in this
+  project).
 
 - **Rust (video game)** = A survival game available on Steam. Uses Unity game
   engine.

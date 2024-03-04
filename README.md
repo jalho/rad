@@ -1,4 +1,9 @@
-# DTEK2058 Advanced Software Project
+# rad
+
+The name _rad_ is a recursive acronym meaning "rad ain't all about dlls".
+
+The project consists of a bunch of code around hosting a Rust (the game) server
+et al. The project is also an UTU course project (DTEK2058 Advanced Software Project).
 
 ## Brief description of system functionality
 

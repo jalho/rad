@@ -86,7 +86,7 @@ TODO.
 
 ## Estimated own contribution to the project in hours
 
-100 %
+TODO: Use e.g. https://github.com/jalho/git_time_extractor
 
 ---
 

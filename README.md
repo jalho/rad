@@ -104,7 +104,7 @@ Deploy a VM with at least 16 GB of RAM. RustDedicated requires that much. Then
 install all the stuff there.
 
 ```
-wget https://raw.githubusercontent.com/jalho/DTEK2058-Advanced-Software-Project/master/install.sh
+wget https://raw.githubusercontent.com/jalho/rad/master/install.sh
 bash install.sh
 ```
 

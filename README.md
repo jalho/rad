@@ -103,6 +103,9 @@ section. A new release bundle can be made using `make-release.sh`.
 Deploy a VM with at least 16 GB of RAM. RustDedicated requires that much. Then
 install all the stuff there.
 
+**Note:** The install script may not be up to date with the latest features in
+the submodules...
+
 ```
 wget https://raw.githubusercontent.com/jalho/rad/master/install.sh
 bash install.sh

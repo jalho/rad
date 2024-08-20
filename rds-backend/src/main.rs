@@ -76,7 +76,7 @@ fn main() {
         });
         let rds_start_instant = std::time::Instant::now();
         // the grace period over which (after launch) health checks are not done
-        let rds_grace_period = std::time::Duration::from_millis(3000);
+        let rds_grace_period = std::time::Duration::from_millis(3000); // TODO: Remove fixed length grace period (3 seconds is obviously not even enough in real use)
 
         // inner loop: Process RustDedicated STDOUT, STDERR and check its health (may hang and not terminate)
         loop {

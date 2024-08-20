@@ -11,6 +11,24 @@ fn main() {
         }
     }
 
+    /*
+        TODO: Loop:
+
+        1. Check if RustDedicated is already up & healthy
+            - If so, sleep a while before next check
+            - If not, proceed with the next steps
+        2. Store current version of SteamCMD, check for updates, log if there's
+           any and then update, finally log the bump
+        3. Store current version of RustDedicated, check for updates, log if
+           there's any and then update, finally log the bump
+        4. Store current version of Carbon, check for updates, log if there's
+           any and then update, finally log the bump
+        5. Read configurations from somewhere (env, config file or database)
+        6. Start RustDedicated: Don't wait for termination: Must check health
+           somehow regularly because in some cases in may just hang in a corrupt
+           state (case "monthly content update")
+    */
+
     log(LogLevel::INFO, format_args!("Launching RustDedicated..."));
     exec_observable(
         "./RustDedicated",

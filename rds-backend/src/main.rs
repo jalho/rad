@@ -1,5 +1,46 @@
 fn main() {
-    exec_observable("echo", ["hello", "world"]);
+    // TODO: Define a config struct
+    let config: String;
+    match get_config() {
+        Some(n) => {
+            config = n;
+        }
+        None => {
+            log(LogLevel::INFO, format_args!("Nothing to do!"));
+            return;
+        }
+    }
+
+    log(LogLevel::INFO, format_args!("Launching RustDedicated..."));
+    exec_observable(
+        "./RustDedicated",
+        [
+            "-batchmode",
+            "-logfile rds.log",
+            "+server.identity instance0",
+            "+rcon.port 28016",
+            "+rcon.web 1",
+            &format!("+rcon.password {}", config),
+        ],
+    );
+}
+
+// TODO: Read config from config file or database to some struct
+fn get_config() -> Option<String> {
+    let env_rcon_password = "RCON_PASSWORD";
+    match std::env::var(env_rcon_password) {
+        Ok(n) => {
+            let rcon_password: String = n;
+            return Some(rcon_password);
+        }
+        Err(e) => {
+            log(
+                LogLevel::ERROR,
+                format_args!("Couldn't get env var {}: {:?}", env_rcon_password, e),
+            );
+            return None;
+        }
+    }
 }
 
 /*
@@ -30,10 +71,42 @@ where
         Err(_) => todo!(),
     }
 
+    // TODO: Handle STDERR too
+    match cmd_process.stdout.take() {
+        Some(n) => {
+            let reader = std::io::BufReader::new(n);
+            for line in std::io::BufRead::lines(reader) {
+                match line {
+                    Ok(n) => {
+                        // TODO: Pass read line to given writers and exec stats collector
+                        println!("{}", n);
+                    }
+                    Err(_) => todo!(),
+                }
+            }
+        }
+        None => todo!(),
+    }
+
     match cmd_process.wait() {
         Ok(n) => {
             return n;
         }
         Err(_) => todo!(),
+    }
+}
+
+enum LogLevel {
+    INFO,
+    ERROR,
+}
+fn log(level: LogLevel, message: std::fmt::Arguments) {
+    match level {
+        LogLevel::INFO => {
+            println!("[INFO] - {}", message)
+        }
+        LogLevel::ERROR => {
+            println!("[ERROR] - {}", message)
+        }
     }
 }

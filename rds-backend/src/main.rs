@@ -2,10 +2,17 @@ fn main() {
     exec_observable("echo", ["hello", "world"]);
 }
 
-// TODO: Accept some opts that allow for writing stderr, stdout somewhere (e.g.
-//       some buffer that'll be flushed to a number of WebSocket clients and
-//       perhaps to disk too?)
-// TODO: Document!
+/*
+    TODO:
+    - Document.
+    - Add writers for STDOUT, STDERR: The writers should be capable of writing
+      to log file(s) and of sending to a number of authorized WebSockets.
+    - Add support for collecting stats: E.g. how long did it take for
+      RustDedicated to start accepting TCP at RCON port or for BradleyAPC to
+      spawn or for Steam server to connect etc. The collector's should be able
+      to read any given STDOUT and STDERR, parse them and then pass what was
+      read to some writer (that may e.g. insert to a database).
+*/
 fn exec_observable<I, S>(executable_path: S, args: I) -> std::process::ExitStatus
 where
     I: IntoIterator<Item = S>,

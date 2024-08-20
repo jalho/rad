@@ -65,9 +65,8 @@ fn main() {
                             break;
                         }
                     }
-                    Err(e) => {
-                        eprintln!("Error reading stdout: {}", e);
-                        break;
+                    Err(_e) => {
+                        todo!();
                     }
                 }
             }

@@ -1,3 +1,14 @@
+mod rds;
+
+use std::{
+    sync::{Arc, Mutex},
+    thread::spawn,
+};
+
+use rds::RDS;
+
+static RDS_GLOBAL: RDS = RDS::new();
+
 /// Three threads of execution on the operating system level:
 ///
 /// 1. *RustDedicated* game server
@@ -62,4 +73,51 @@
 ///   - stopping and starting
 ///   - updating all dependencies: SteamCMD, RustDediceted, Carbon
 ///   - passing messages both ways between WebSocket clients and itself
-fn main() {}
+fn main() {
+    let rds1: Arc<Mutex<&RDS>> = Arc::new(Mutex::new(&RDS_GLOBAL));
+    let rds2: Arc<Mutex<&RDS>> = rds1.clone();
+    let rds3: Arc<Mutex<&RDS>> = rds1.clone();
+
+    let th_rds_run = spawn(move || loop {
+        let rds: &RDS;
+        let r = rds1.lock();
+        match r {
+            Ok(m) => {
+                rds = *m;
+            }
+            Err(_) => todo!(),
+        }
+
+        println!("[Thread #1] {}", rds.noop());
+    });
+
+    let th_rds_healthcheck = spawn(move || loop {
+        let rds: &RDS;
+        let r = rds2.lock();
+        match r {
+            Ok(m) => {
+                rds = *m;
+            }
+            Err(_) => todo!(),
+        }
+
+        println!("[Thread #2] {}", rds.noop());
+    });
+
+    let th_webserver = spawn(move || loop {
+        let rds: &RDS;
+        let r = rds3.lock();
+        match r {
+            Ok(m) => {
+                rds = *m;
+            }
+            Err(_) => todo!(),
+        }
+
+        println!("[Thread #3] {}", rds.noop());
+    });
+
+    _ = th_rds_run.join();
+    _ = th_rds_healthcheck.join();
+    _ = th_webserver.join();
+}

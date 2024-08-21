@@ -1,20 +1,9 @@
 fn main() {
     // TODO: Define a config struct instead of just one string
     let config: String;
-    /*
-        There's no inherent reason for why the config must be Arc; it's just to
-        communicate the idea to the compiler... The configuration is only ever
-        intended to be used (read) by one single thread at a time (the one that
-        spawns the RustDedicated instance). But because it's spawned in a loop,
-        it needs to be a thread-safe pointer because the compiler can't realize
-        the logic that the previous thread will be completed before starting the
-        next one...
-    */
-    let config_arc: std::sync::Arc<String>;
     match get_config() {
         Some(n) => {
             config = n;
-            config_arc = std::sync::Arc::new(config);
         }
         None => {
             log(
@@ -28,24 +17,22 @@ fn main() {
 
     // top loop: Install, update, restart RustDedicated if terminated
     loop {
-        let config_arc2: std::sync::Arc<String>;
-        config_arc2 = config_arc.clone();
-
         // TODO: Install & update SteamCMD if necessary
         // TODO: Install & update RustDedicated if necessary
         // TODO: Install & update Carbon if necessary
 
         let (tx, rx) = std::sync::mpsc::channel();
+        let rcon_password = config.clone();
 
         std::thread::spawn(move || {
-            let mut child = std::process::Command::new("./RustDedicated")
+            let mut child: std::process::Child = std::process::Command::new("./RustDedicated")
                 .args([
                     "-batchmode",
-                    "-logfile rds.log",
+                    // "-logfile rds.log",
                     "+server.identity instance0",
                     "+rcon.port 28016",
                     "+rcon.web 1",
-                    &format!("+rcon.password {}", config_arc2),
+                    &format!("+rcon.password {}", rcon_password),
                 ])
                 .stdout(std::process::Stdio::piped())
                 .spawn()

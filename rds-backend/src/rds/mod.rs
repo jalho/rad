@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 enum RDSState {
     STARTING,
     HEALTHY,
@@ -20,7 +18,8 @@ impl RDS {
       };
     }
 
-    pub fn noop(&self) -> String {
+    pub fn noop(&mut self) -> String {
+      self.state = RDSState::UNHEALTHY;
       return String::from("Hello from RDS!");
     }
 }

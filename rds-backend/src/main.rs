@@ -7,8 +7,6 @@ use std::{
 
 use rds::RDS;
 
-static RDS_GLOBAL: RDS = RDS::new();
-
 /// Three threads of execution on the operating system level:
 ///
 /// 1. *RustDedicated* game server
@@ -74,47 +72,45 @@ static RDS_GLOBAL: RDS = RDS::new();
 ///   - updating all dependencies: SteamCMD, RustDediceted, Carbon
 ///   - passing messages both ways between WebSocket clients and itself
 fn main() {
-    let rds1: Arc<Mutex<&RDS>> = Arc::new(Mutex::new(&RDS_GLOBAL));
-    let rds2: Arc<Mutex<&RDS>> = rds1.clone();
-    let rds3: Arc<Mutex<&RDS>> = rds1.clone();
+    /* `rds` is a global singleton that lasts over the whole program and is
+    accessible from all threads. */
+    let rds = RDS::new();
+    let rds0: &'static mut RDS = Box::leak(Box::new(rds));
+    let rds1: Arc<Mutex<&mut RDS>> = Arc::new(Mutex::new(rds0));
+    let rds2: Arc<Mutex<&mut RDS>> = rds1.clone();
+    let rds3: Arc<Mutex<&mut RDS>> = rds1.clone();
 
     let th_rds_run = spawn(move || loop {
-        let rds: &RDS;
         let r = rds1.lock();
         match r {
-            Ok(m) => {
-                rds = *m;
+            Ok(mut m) => {
+                let rds: &mut RDS = *m;
+                println!("[Thread #1] {}", rds.noop());
             }
             Err(_) => todo!(),
         }
-
-        println!("[Thread #1] {}", rds.noop());
     });
 
     let th_rds_healthcheck = spawn(move || loop {
-        let rds: &RDS;
         let r = rds2.lock();
         match r {
-            Ok(m) => {
-                rds = *m;
+            Ok(mut m) => {
+                let rds: &mut RDS = *m;
+                println!("[Thread #2] {}", rds.noop());
             }
             Err(_) => todo!(),
         }
-
-        println!("[Thread #2] {}", rds.noop());
     });
 
     let th_webserver = spawn(move || loop {
-        let rds: &RDS;
         let r = rds3.lock();
         match r {
-            Ok(m) => {
-                rds = *m;
+            Ok(mut m) => {
+                let rds: &mut RDS = *m;
+                println!("[Thread #3] {}", rds.noop());
             }
             Err(_) => todo!(),
         }
-
-        println!("[Thread #3] {}", rds.noop());
     });
 
     _ = th_rds_run.join();

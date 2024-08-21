@@ -1,6 +1,63 @@
 use std::io::Write;
 
 fn main() {
+    /*
+        # New plan:
+
+        ## Thread 1: "Run RustDedicated"
+
+        ```
+        loop {
+            rds.unlock();
+            if !rds.is_healthy() {
+                rds.stop();
+                rds.update();
+                rds.start();
+            } else {
+                rds.process_output_blocking();
+            }
+        }
+        ```
+
+        ## Thread 2: "Monitor health of RustDedicated"
+
+        Separate thread because the Thread 1 ("Run RustDedicated") is blocking.
+
+        ```
+        loop {
+            rds.unlock();
+            rds.check_health();
+            sleep(interval);
+        }
+        ```
+
+        ## Thread 3: "HTTP and WebSocket server"
+
+        Some async single-thread executor accepting authorized WebSocket
+        connections and passing messages between them and `rds`.
+
+        ```
+        loop non-blocking { // tokio-singlethreaded-whatever
+            server.accept();
+            for web_client in server.clients {
+                rds.handle_duplex(web_client);
+            }
+        }
+        ```
+
+        ## Global thread-safe smart pointer `rds`
+
+        - Arc<Mutex<whatever>>: Must be accessible in all of the 3 threads.
+        - Stores:
+          - ID of the RustDedicated game server process (PID)
+          - state of the process: STARTING | HEALTHY | UNHEALTHY | TERMINATED
+            - enum shall contain time instant at which the state was last updated
+        - Provides methods for:
+          - stopping and starting
+          - updating all dependencies: SteamCMD, RustDediceted, Carbon
+          - passing messages both ways between WebSocket clients and itself
+    */
+
     // TODO: Define a config struct instead of just one string
     let config: String;
     match get_config() {

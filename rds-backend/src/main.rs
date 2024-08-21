@@ -1,3 +1,5 @@
+use std::io::Write;
+
 fn main() {
     // TODO: Define a config struct instead of just one string
     let config: String;
@@ -67,7 +69,8 @@ fn main() {
         // inner loop: Process RustDedicated STDOUT, STDERR and check its health (may hang and not terminate)
         loop {
             match rx.try_recv() {
-                Ok(_line) => {
+                Ok(line) => {
+                    rds_log_to_disk(LogFd::STDOUT, &line);
                     /*
                         TODO: Process STDOUT, STDERR of RustDedicated: Send to
                               authorized WebSocket clients, write to some log
@@ -134,6 +137,29 @@ fn main() {
                 );
             }
             std::thread::sleep(std::time::Duration::from_millis(1000));
+        }
+    }
+}
+
+#[derive(Debug)]
+enum LogFd {
+    STDOUT,
+    // STDERR
+}
+fn rds_log_to_disk(log_origin: LogFd, log_message: &String) {
+    match std::fs::File::options()
+        .append(true)
+        .create(true)
+        .open(format!("rds-{:?}.log", log_origin))
+    {
+        Ok(mut f) => match f.write_fmt(format_args!("[{}] - {}\n", "TODO: Timestamp", log_message))
+        {
+            Ok(_) => {}
+            Err(_) => todo!(),
+        },
+        Err(err) => {
+            eprint!("{:?}", err);
+            todo!();
         }
     }
 }

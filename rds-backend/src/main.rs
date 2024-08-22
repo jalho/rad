@@ -75,8 +75,9 @@ fn main() -> std::result::Result<(), FatalError> {
             pid_rds = pid;
         }
         Err(err_get_pid) => {
-            eprintln!("[ERROR] - {}", err_get_pid);
-            return std::result::Result::Err(err_get_pid.into());
+            let error = FatalError::from(err_get_pid);
+            eprintln!("[ERROR] - {}", error);
+            return std::result::Result::Err(error);
         }
     }
 

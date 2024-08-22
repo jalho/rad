@@ -64,8 +64,8 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
         Err(err_parse) => {
             return std::result::Result::Err(ProcessError::CannotParseStdout {
                 executable_path: seeker_path,
-                cause: err_parse,
                 input: line.into(),
+                cause: err_parse,
             })
         }
     }

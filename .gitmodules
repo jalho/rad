@@ -13,3 +13,6 @@
 [submodule "rds-plugins"]
 	path = rds-plugins
 	url = git@github.com:jalho/rds-plugins.git
+[submodule "rds-daemon"]
+	path = rds-daemon
+	url = git@github.com:jalho/rds-daemon.git

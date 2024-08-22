@@ -4,7 +4,7 @@ pub fn get_age(pid: u32) -> std::time::Duration {
 
 pub enum ProcStatus {
     Terminated,
-    Running(u32),
+    Running(u32), // PID
 }
 pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> {
     let mut seeker: std::process::Child;

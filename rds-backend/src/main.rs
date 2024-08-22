@@ -51,14 +51,14 @@ mod rds;
 ///     }
 /// }
 /// ```
-fn main() -> std::result::Result<(), process::ForkError> {
+fn main() -> std::result::Result<(), FatalError> {
     /*
         PID of the process running RustDedicated game server.
     */
     let pid_rds: u32;
 
-    match process::get_pid("RustDedicated") {
-        Ok(process::ProcStatus::TERMINATED) => {
+    match process::get_pid("RustDedicated")? {
+        process::ProcStatus::TERMINATED => {
             let fork: process::Fork = process::launch_fork("./RustDedicated")?;
             _ = fork.jh.join();
             println!(
@@ -67,15 +67,21 @@ fn main() -> std::result::Result<(), process::ForkError> {
             );
             pid_rds = fork.pid;
         }
-        Ok(process::ProcStatus::RUNNING(pid)) => {
+        process::ProcStatus::RUNNING(pid) => {
             println!(
                 "[INFO] - Detected existing RustDedicated process with PID {}",
                 pid
             );
             pid_rds = pid;
         }
-        Err(_) => todo!(),
     }
 
     return std::result::Result::Ok(());
+}
+
+/// The errors we may return with from main that we can't recover from.
+#[derive(Debug)]
+enum FatalError {
+    ForkError(),
+    ExtCommandError(),
 }

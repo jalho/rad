@@ -6,7 +6,11 @@ pub enum ProcStatus {
     TERMINATED,
     RUNNING(u32),
 }
-pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, std::io::Error> {
+/// An error related to executing an external command.
+/// E.g. case couldn't spawn or wait "pgrep RustDedicated".
+#[derive(Debug)]
+pub struct ExtCommandError(std::io::Error);
+pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, ExtCommandError> {
     let mut proc: std::process::Child;
     match std::process::Command::new("pgrep")
         .arg(executable_name)
@@ -16,7 +20,7 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, std::io
         Ok(n) => {
             proc = n;
         }
-        Err(err_io) => return std::result::Result::Err(err_io),
+        Err(err_io) => return std::result::Result::Err(ExtCommandError(err_io)),
     }
     let stdout: std::process::ChildStdout;
     match proc.stdout.take() {
@@ -38,7 +42,7 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, std::io
         Ok(n) => {
             pgrep_exit = n;
         }
-        Err(err_io) => return std::result::Result::Err(err_io),
+        Err(err_io) => return std::result::Result::Err(ExtCommandError(err_io)),
     }
     if !pgrep_exit.success() {
         return std::result::Result::Ok(ProcStatus::TERMINATED);
@@ -78,9 +82,21 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, std::io
 }
 
 #[derive(Debug)]
+/// Errors related to forking a thing (RustDedicated game server) into an
+/// independent process.
 pub enum ForkError {
     RX(std::sync::mpsc::RecvError),
     IO(std::io::Error),
+}
+impl From<ForkError> for crate::FatalError {
+    fn from(_value: ForkError) -> Self {
+        return Self::ForkError();
+    }
+}
+impl From<ExtCommandError> for crate::FatalError {
+    fn from(_value: ExtCommandError) -> Self {
+        return Self::ExtCommandError();
+    }
 }
 
 pub struct Fork {

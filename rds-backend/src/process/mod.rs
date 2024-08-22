@@ -6,49 +6,45 @@ pub enum ProcStatus {
     Terminated,
     Running(u32),
 }
-pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, ProcessError> {
-    let mut proc: std::process::Child;
-    let executable_path = std::path::PathBuf::from("pgrep");
-    match std::process::Command::new(&executable_path)
-        .arg(executable_name)
+pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> {
+    let mut seeker: std::process::Child;
+    let seeker_path = std::path::PathBuf::from("pgrep");
+    match std::process::Command::new(&seeker_path)
+        .arg(seekable)
         .stdout(std::process::Stdio::piped())
         .spawn()
     {
         Ok(n) => {
-            proc = n;
+            seeker = n;
         }
         Err(err_io) => {
             return std::result::Result::Err(ProcessError::CannotSpawn {
                 error: err_io,
-                executable_path,
-            })
+                path: seeker_path,
+            });
         }
     }
     let stdout: std::process::ChildStdout;
-    match proc.stdout.take() {
+    match seeker.stdout.take() {
         Some(n) => {
             stdout = n;
         }
-        /*
-            We asked for STDOUT but the OS didn't give it so I guess we panic!
-        */
         None => {
-            eprintln!("Didn't get STDOUT handle!");
-            todo!();
+            return std::result::Result::Err(ProcessError::CannotGetStdout { path: seeker_path })
         }
     }
     let mut reader = std::io::BufReader::new(stdout);
 
     let status: std::process::ExitStatus;
-    match proc.wait() {
+    match seeker.wait() {
         Ok(n) => {
             status = n;
         }
         Err(err_io) => {
             return std::result::Result::Err(ProcessError::CannotWait {
                 error: err_io,
-                executable_path,
-            })
+                path: seeker_path,
+            });
         }
     }
     if !status.success() {
@@ -95,12 +91,15 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
 #[derive(Debug)]
 pub enum ProcessError {
     CannotSpawn {
-        executable_path: std::path::PathBuf,
+        path: std::path::PathBuf,
         error: std::io::Error,
     },
     CannotWait {
-        executable_path: std::path::PathBuf,
+        path: std::path::PathBuf,
         error: std::io::Error,
+    },
+    CannotGetStdout {
+        path: std::path::PathBuf,
     },
 }
 impl std::error::Error for ProcessError {
@@ -108,24 +107,16 @@ impl std::error::Error for ProcessError {
         match *self {
             ProcessError::CannotSpawn { ref error, .. } => Some(error),
             ProcessError::CannotWait { ref error, .. } => Some(error),
+            ProcessError::CannotGetStdout { .. } => None,
         }
     }
 }
 impl std::fmt::Display for ProcessError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            ProcessError::CannotSpawn {
-                executable_path: ref path,
-                ..
-            } => {
-                return write!(f, "CannotSpawn {:?}", path);
-            }
-            ProcessError::CannotWait {
-                executable_path: ref path,
-                ..
-            } => {
-                return write!(f, "CannotWait {:?}", path);
-            }
+            ProcessError::CannotSpawn { ref path, .. } => write!(f, "cannot spawn {:?}", path),
+            ProcessError::CannotWait { ref path, .. } => write!(f, "failed to wait {:?}", path),
+            ProcessError::CannotGetStdout { ref path } => write!(f, "cannot get STDOUT {:?}", path),
         }
     }
 }
@@ -206,7 +197,7 @@ pub fn launch_fork(executable_path: std::path::PathBuf) -> std::result::Result<F
                     tx,
                     std::result::Result::Err(ForkError::Other(ProcessError::CannotSpawn {
                         error: err_io,
-                        executable_path,
+                        path: executable_path,
                     })),
                 );
                 return;

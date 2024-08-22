@@ -1,5 +1,6 @@
 mod process;
 mod rds;
+mod log;
 
 /// First, the program checks if the Rust game server (executable name
 /// _RustDedicated_) is running, and starts it if not. If a new start is
@@ -76,8 +77,9 @@ fn main() -> std::result::Result<(), FatalError> {
         }
         Err(err_get_pid) => {
             let error = FatalError::from(err_get_pid);
-            eprintln!("[ERROR] - {}", error);
-            return std::result::Result::Err(error);
+            log::log_error_with_source(error);
+            todo!();
+            // return std::result::Result::Err(error);
         }
     }
 

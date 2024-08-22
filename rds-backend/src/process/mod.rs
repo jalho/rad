@@ -8,7 +8,7 @@ pub enum ProcStatus {
 }
 pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> {
     let mut seeker: std::process::Child;
-    let seeker_path = std::path::PathBuf::from("pgrep");
+    let seeker_path = std::path::PathBuf::from("echo"); // TODO: revert temp bug
     match std::process::Command::new(&seeker_path)
         .arg(seekable)
         .stdout(std::process::Stdio::piped())
@@ -152,7 +152,7 @@ impl std::fmt::Display for ProcessError {
                 ..
             } => write!(
                 f,
-                "cannot parse integer from stdout of process from executable {:?}: {}",
+                "cannot parse integer from stdout of process from executable {:?}: \"{}\"",
                 path, input
             ),
         }

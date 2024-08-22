@@ -66,8 +66,14 @@ fn send_result(
     sender: std::sync::mpsc::Sender<Result<u32, std::io::Error>>,
     result: std::result::Result<u32, std::io::Error>,
 ) {
-    /*
-      If we can't use a results channel to send results, then we can only panic.
-    */
-    sender.send(result).unwrap();
+    match sender.send(result) {
+        Ok(_) => {}
+        Err(err) => {
+            /*
+              If we can't use a results channel to send results, then we can
+              only panic.
+            */
+            panic!("{:#?}", err);
+        }
+    }
 }

@@ -65,6 +65,7 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
             return std::result::Result::Err(ProcessError::CannotParseStdout {
                 executable_path: seeker_path,
                 cause: err_parse,
+                input: line.into(),
             })
         }
     }
@@ -93,6 +94,7 @@ pub enum ProcessError {
     CannotParseStdout {
         executable_path: std::path::PathBuf,
         cause: std::num::ParseIntError,
+        input: String,
     },
 }
 impl std::error::Error for ProcessError {
@@ -146,11 +148,12 @@ impl std::fmt::Display for ProcessError {
             ),
             ProcessError::CannotParseStdout {
                 executable_path: ref path,
+                ref input,
                 ..
             } => write!(
                 f,
-                "cannot parse integer from stdout of process from executable {:?}",
-                path
+                "cannot parse integer from stdout '{}' of process from executable {:?}",
+                input, path
             ),
         }
     }

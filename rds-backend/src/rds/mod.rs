@@ -82,14 +82,8 @@ pub enum ProcStatus {
     TERMINATED,
     RUNNING(u32),
 }
-pub enum ProcStatusError {
-    /// E.g. couldn't use "pgrep" required to look for the process.
-    IO(std::io::Error),
-    /// Couldn't parse "pgrep" return value.
-    Parse(std::num::ParseIntError),
-}
 /// Check whether there exists a _RustDedicated_ game server process.
-pub fn rds_check_process() -> std::result::Result<ProcStatus, ProcStatusError> {
+pub fn rds_check_process() -> std::result::Result<ProcStatus, std::io::Error> {
     let mut proc: std::process::Child;
     match std::process::Command::new("pgrep")
         .arg("RustDedicated")
@@ -99,7 +93,7 @@ pub fn rds_check_process() -> std::result::Result<ProcStatus, ProcStatusError> {
         Ok(n) => {
             proc = n;
         }
-        Err(err_io) => return std::result::Result::Err(ProcStatusError::IO(err_io)),
+        Err(err_io) => return std::result::Result::Err(err_io),
     }
     let stdout: std::process::ChildStdout;
     match proc.stdout.take() {
@@ -121,7 +115,7 @@ pub fn rds_check_process() -> std::result::Result<ProcStatus, ProcStatusError> {
         Ok(n) => {
             pgrep_exit = n;
         }
-        Err(err_io) => return std::result::Result::Err(ProcStatusError::IO(err_io)),
+        Err(err_io) => return std::result::Result::Err(err_io),
     }
     if !pgrep_exit.success() {
         return std::result::Result::Ok(ProcStatus::TERMINATED);

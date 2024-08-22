@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 pub fn get_age(pid: u32) -> std::time::Duration {
     todo!();
 }
@@ -8,7 +10,8 @@ pub enum ProcStatus {
 }
 pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, ProcessError> {
     let mut proc: std::process::Child;
-    match std::process::Command::new("pgrep")
+    let executable_path = PathBuf::from("pgrep");
+    match std::process::Command::new(&executable_path)
         .arg(executable_name)
         .stdout(std::process::Stdio::piped())
         .spawn()
@@ -16,7 +19,12 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
         Ok(n) => {
             proc = n;
         }
-        Err(err_io) => return std::result::Result::Err(ProcessError::CannotSpawn(err_io)),
+        Err(err_io) => {
+            return std::result::Result::Err(ProcessError::CannotSpawn {
+                error: err_io,
+                executable_path,
+            })
+        }
     }
     let stdout: std::process::ChildStdout;
     match proc.stdout.take() {
@@ -38,7 +46,12 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
         Ok(n) => {
             pgrep_exit = n;
         }
-        Err(err_io) => return std::result::Result::Err(ProcessError::CannotWait(err_io)),
+        Err(err_io) => {
+            return std::result::Result::Err(ProcessError::CannotWait {
+                error: err_io,
+                executable_path,
+            })
+        }
     }
     if !pgrep_exit.success() {
         return std::result::Result::Ok(ProcStatus::Terminated);
@@ -83,25 +96,37 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
 ///       the executable!
 #[derive(Debug)]
 pub enum ProcessError {
-    CannotSpawn(std::io::Error),
-    CannotWait(std::io::Error),
+    CannotSpawn {
+        executable_path: PathBuf,
+        error: std::io::Error,
+    },
+    CannotWait {
+        executable_path: PathBuf,
+        error: std::io::Error,
+    },
 }
 impl std::error::Error for ProcessError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
-            ProcessError::CannotSpawn(ref e) => Some(e),
-            ProcessError::CannotWait(ref e) => Some(e),
+            ProcessError::CannotSpawn { ref error, .. } => Some(error),
+            ProcessError::CannotWait { ref error, .. } => Some(error),
         }
     }
 }
 impl std::fmt::Display for ProcessError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            ProcessError::CannotSpawn(_) => {
-                return write!(f, "CannotSpawn");
+            ProcessError::CannotSpawn {
+                executable_path: ref path,
+                ..
+            } => {
+                return write!(f, "CannotSpawn {:?}", path);
             }
-            ProcessError::CannotWait(_) => {
-                return write!(f, "CannotWait");
+            ProcessError::CannotWait {
+                executable_path: ref path,
+                ..
+            } => {
+                return write!(f, "CannotWait {:?}", path);
             }
         }
     }
@@ -155,7 +180,7 @@ pub struct Fork {
 }
 
 /// Launch a thing into an independent process.
-pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, ForkError> {
+pub fn launch_fork(executable_path: PathBuf) -> std::result::Result<Fork, ForkError> {
     let (tx, rx) = std::sync::mpsc::channel::<std::result::Result<u32, ForkError>>();
 
     let jh = std::thread::spawn(move || {
@@ -164,7 +189,7 @@ pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, F
         */
         let pid: u32;
 
-        let mut command = std::process::Command::new(executable_path);
+        let mut command = std::process::Command::new(&executable_path);
 
         /*
           We don't want to call process.wait() because that would make the
@@ -181,7 +206,10 @@ pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, F
             Err(err_io) => {
                 send_result(
                     tx,
-                    std::result::Result::Err(ForkError::Other(ProcessError::CannotSpawn(err_io))),
+                    std::result::Result::Err(ForkError::Other(ProcessError::CannotSpawn {
+                        error: err_io,
+                        executable_path,
+                    })),
                 );
                 return;
             }

@@ -1,5 +1,3 @@
-use std::error::Error;
-
 mod process;
 mod rds;
 
@@ -61,7 +59,7 @@ fn main() -> std::result::Result<(), FatalError> {
 
     match process::get_pid("RustDedicated") {
         Ok(process::ProcStatus::Terminated) => {
-            let fork: process::Fork = process::launch_fork("./RustDedicated")?;
+            let fork: process::Fork = process::launch_fork("./RustDedicated".into())?;
             _ = fork.jh.join();
             println!(
                 "[INFO] - Launched game server in an independent process with PID {}",
@@ -101,10 +99,6 @@ impl std::error::Error for FatalError {
 }
 impl std::fmt::Display for FatalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        return write!(
-            f,
-            "this is FatalError display impl... {}",
-            self.source().unwrap()
-        );
+        return write!(f, "FatalError",);
     }
 }

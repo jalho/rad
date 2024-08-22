@@ -39,10 +39,10 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
     }
     let mut reader = std::io::BufReader::new(stdout);
 
-    let pgrep_exit: std::process::ExitStatus;
+    let status: std::process::ExitStatus;
     match proc.wait() {
         Ok(n) => {
-            pgrep_exit = n;
+            status = n;
         }
         Err(err_io) => {
             return std::result::Result::Err(ProcessError::CannotWait {
@@ -51,7 +51,7 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
             })
         }
     }
-    if !pgrep_exit.success() {
+    if !status.success() {
         return std::result::Result::Ok(ProcStatus::Terminated);
     }
 

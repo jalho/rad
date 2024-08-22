@@ -1,5 +1,3 @@
-use std::io::Read;
-
 #[derive(Debug)]
 pub enum ForkError {
     RX(std::sync::mpsc::RecvError),
@@ -111,7 +109,10 @@ pub fn rds_check_process() -> std::result::Result<ProcStatus, ProcStatusError> {
         /*
             We asked for STDOUT but the OS didn't give it so I guess we panic!
         */
-        None => todo!(),
+        None => {
+            eprintln!("Didn't get STDOUT handle!");
+            todo!();
+        }
     }
     let mut reader = std::io::BufReader::new(stdout);
 
@@ -134,7 +135,10 @@ pub fn rds_check_process() -> std::result::Result<ProcStatus, ProcStatusError> {
             "pgrep" exited with successful status but we couldn't get its STDOUT
             so I guess we panic!
         */
-        Err(_) => todo!(),
+        Err(err_read) => {
+            eprintln!("Could not read STDOUT: {:#?}", err_read);
+            todo!()
+        }
     }
     let line = line.trim();
     match line.parse::<u32>() {

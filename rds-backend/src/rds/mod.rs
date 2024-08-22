@@ -1,62 +1,38 @@
-#[derive(Debug)]
-pub enum ForkError {
-    A(std::io::Error),
-    B(std::sync::mpsc::RecvTimeoutError),
-}
-
 /// Launch RustDedicated game server in an independent process.
-pub fn rds_launch() -> std::result::Result<libc::pid_t, ForkError> {
-    let (tx, rx) = std::sync::mpsc::channel::<Result<libc::pid_t, ForkError>>();
+pub fn rds_launch() {
+    let th = std::thread::spawn(move || {
+        /*
+          PID of the forked OS thread that spawns the thread running
+          RustDedicated game server.
+        */
+        let pid_intermediate: libc::pid_t;
 
-    std::thread::spawn(move || {
-        let mut rds_command = std::process::Command::new("./RustDedicated");
-        let mut rds_thread: std::process::Child;
+        /*
+          PID of the RustDedicated game server process.
+        */
+        let _pid_final: u32;
 
-        match rds_command.spawn() {
-            Ok(n) => {
-                rds_thread = n;
-            }
-            Err(err) => {
-                _ = tx.send(std::result::Result::Err(ForkError::A(err)));
-                return;
-            }
-        }
-
-        let pid: libc::pid_t;
         unsafe {
             /*
               Duplicate current process into an independent process.
             */
-            pid = libc::fork();
+            pid_intermediate = libc::fork();
         }
 
-        // case "child": Run the spawned RustDedicated game server process to termination
-        if pid == 0 {
-            _ = rds_thread.wait();
-            return;
+        // case "child": Run RustDedicated to termination
+        if pid_intermediate == 0 {
+            let mut rds_command = std::process::Command::new("./RustDedicated");
+            let mut rds_process: std::process::Child;
+            println!("[DEBUG] - Spawning RustDedicated process...");
+            rds_process = rds_command.spawn().unwrap();
+            println!("[DEBUG] - Spawned RustDedicated process!");
+            _pid_final = rds_process.id(); // TODO: Signal the final PID to the parent somehow?
+            _ = rds_process.wait();
         }
-        // case "parent": Kill the excess duplicate thread.
+        // case "parent"
         else {
-            match rds_thread.kill() {
-                Ok(_) => {
-                    _ = tx.send(std::result::Result::Ok(pid));
-                    return;
-                }
-                Err(err) => {
-                    _ = tx.send(std::result::Result::Err(ForkError::A(err)));
-                    return;
-                }
-            }
+            // here pid_intermediate is the forked child process' PID
         }
     });
-
-    let timeout = std::time::Duration::from_millis(10);
-    match rx.recv_timeout(timeout) {
-        Ok(result) => {
-            return result;
-        }
-        Err(err) => {
-            return std::result::Result::Err(ForkError::B(err));
-        }
-    }
+    th.join().unwrap();
 }

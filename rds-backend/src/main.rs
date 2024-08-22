@@ -51,18 +51,7 @@ mod rds;
 /// }
 /// ```
 fn main() {
-    match rds::rds_launch() {
-        Ok(pid) => {
-            println!(
-                "[INFO] - Forked game server into independent process with PID {}",
-                pid
-            );
-        }
-        Err(err) => {
-            eprintln!(
-                "[ERROR] - Failed to fork game server into an independent process: {:#?}",
-                err
-            );
-        }
-    }
+    println!("[DEBUG] - Calling rds::rds_launch");
+    rds::rds_launch();
+    println!("[DEBUG] - Returned from rds::rds_launch");
 }

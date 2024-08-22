@@ -9,7 +9,7 @@ pub struct Fork {
 
 /// Launch RustDedicated game server in an independent process.
 pub fn rds_launch_fork() -> Fork {
-    let (tx, rx) = std::sync::mpsc::channel::<u32>();
+    let (tx, rx) = std::sync::mpsc::channel::<std::result::Result<u32, std::io::Error>>();
 
     let jh = std::thread::spawn(move || {
         /*
@@ -27,26 +27,30 @@ pub fn rds_launch_fork() -> Fork {
           while the other is taken down and perhaps restarted.
         */
         let rds_process: std::process::Child;
-        rds_process = rds_command.spawn().unwrap();
-        pid = rds_process.id();
-
-        match tx.send(pid) {
-            Ok(_) => {
-                // Nothing to do!
+        match rds_command.spawn() {
+            Ok(n) => {
+                rds_process = n;
             }
             Err(err) => {
-                handle_result_channel_err(err);
+                send_result(tx, std::result::Result::Err(err));
+                return;
             }
         }
-
+        pid = rds_process.id();
+        send_result(tx, std::result::Result::Ok(pid));
         return;
     });
 
-    let pid = rx.recv().unwrap(); // TODO: Handle properly!
+    let pid = rx.recv().unwrap().unwrap(); // TODO: Handle properly!
     return Fork { jh, pid };
 }
 
-/// If we can't use a results channel to send results, then we can only panic.
-fn handle_result_channel_err<T>(_err: std::sync::mpsc::SendError<T>) {
-    panic!();
+fn send_result(
+    sender: std::sync::mpsc::Sender<Result<u32, std::io::Error>>,
+    result: std::result::Result<u32, std::io::Error>,
+) {
+    /*
+      If we can't use a results channel to send results, then we can only panic.
+    */
+    sender.send(result).unwrap();
 }

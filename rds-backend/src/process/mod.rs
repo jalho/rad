@@ -1,5 +1,11 @@
 pub fn get_age(pid: u32) -> std::time::Duration {
-    todo!();
+    let arg: &str = &pid.to_string();
+    let elapsed_secs: u64;
+    match get_integer_value_with("ps", ["-o", "etimes=", "-p", arg].into()) {
+        Ok(n) => elapsed_secs = n,
+        Err(_) => todo!(),
+    }
+    return std::time::Duration::from_secs(elapsed_secs);
 }
 
 pub enum ProcStatus {
@@ -72,6 +78,78 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
     return std::result::Result::Ok(ProcStatus::Running(pid));
 }
 
+fn get_integer_value_with(
+    executable: &str,
+    args: Vec<&str>,
+) -> std::result::Result<u64, ProcessError> {
+    let mut child: std::process::Child;
+    let executable_path = std::path::PathBuf::from(executable);
+    match std::process::Command::new(&executable_path)
+        .args(&args)
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+    {
+        Ok(n) => child = n,
+        Err(err_io) => {
+            return std::result::Result::Err(ProcessError::CannotSpawn {
+                cause: err_io,
+                executable_path,
+            });
+        }
+    }
+    let stdout: std::process::ChildStdout;
+    match child.stdout.take() {
+        Some(n) => stdout = n,
+        None => {
+            return std::result::Result::Err(ProcessError::CannotGetStdoutHandle {
+                executable_path,
+            });
+        }
+    }
+    let mut reader = std::io::BufReader::new(stdout);
+
+    let status: std::process::ExitStatus;
+    match child.wait() {
+        Ok(n) => status = n,
+        Err(err_io) => {
+            return std::result::Result::Err(ProcessError::CannotWait {
+                cause: err_io,
+                executable_path,
+            });
+        }
+    }
+    if !status.success() {
+        return std::result::Result::Err(ProcessError::ErrorExitStatus {
+            executable_path,
+            input: args.join(" "),
+        });
+    }
+
+    let integer_parsed: u64;
+    let mut line = String::new();
+    match std::io::BufRead::read_line(&mut reader, &mut line) {
+        Ok(_) => {}
+        Err(err_read) => {
+            return std::result::Result::Err(ProcessError::CannotReadStdout {
+                executable_path,
+                cause: err_read,
+            })
+        }
+    }
+    let line = line.trim();
+    match line.parse::<u64>() {
+        Ok(n) => integer_parsed = n,
+        Err(err_parse) => {
+            return std::result::Result::Err(ProcessError::CannotParseStdout {
+                executable_path,
+                input: line.into(),
+                cause: err_parse,
+            })
+        }
+    }
+    return std::result::Result::Ok(integer_parsed);
+}
+
 /// Error variants related to process lifecycles because the standard library
 /// considers everything just an IO error.
 #[derive(Debug)]
@@ -96,6 +174,10 @@ pub enum ProcessError {
         cause: std::num::ParseIntError,
         input: String,
     },
+    ErrorExitStatus {
+        executable_path: std::path::PathBuf,
+        input: String,
+    },
 }
 impl std::error::Error for ProcessError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
@@ -113,6 +195,7 @@ impl std::error::Error for ProcessError {
             ProcessError::CannotParseStdout {
                 cause: ref error, ..
             } => Some(error),
+            ProcessError::ErrorExitStatus { .. } => None,
         }
     }
 }
@@ -153,6 +236,14 @@ impl std::fmt::Display for ProcessError {
             } => write!(
                 f,
                 "cannot parse integer from stdout of process from executable {:?}: \"{}\"",
+                path, input
+            ),
+            ProcessError::ErrorExitStatus {
+                executable_path: ref path,
+                ref input,
+            } => write!(
+                f,
+                "exited with error status from process from executable {:?}, input: \"{}\"",
                 path, input
             ),
         }

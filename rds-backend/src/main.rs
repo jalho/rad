@@ -83,6 +83,9 @@ fn main() -> std::result::Result<(), FatalError> {
         }
     }
 
+    let age = process::get_age(pid_rds); // TODO: remove this
+    println!("[DEBUG] - age: {:?}", age); // TODO: remove this
+
     return std::result::Result::Ok(());
 }
 

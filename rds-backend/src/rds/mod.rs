@@ -24,7 +24,7 @@ pub fn rds_launch_fork() -> Fork {
         let pid_final: u32;
 
         let mut rds_command = std::process::Command::new("./RustDedicated");
-        let mut rds_process: std::process::Child;
+        let rds_process: std::process::Child;
         rds_process = rds_command.spawn().unwrap();
         pid_final = rds_process.id();
         _ = tx.send(pid_final).unwrap(); // TODO: Handle properly!
@@ -36,19 +36,11 @@ pub fn rds_launch_fork() -> Fork {
             pid_intermediate = libc::fork();
         }
 
-        // case "child": Run RustDedicated to termination
+        // case "child": Nothing to do!
         if pid_intermediate == 0 {
-            _ = rds_process.wait();
         }
         // case "parent": Nothing to do!
         else {
-            /*
-              TODO: Figure out why we shouldn't call rds_process.kill() here!
-                    AFAIK we should have 2 OS processes running RustDedicated at
-                    this point: the original parent process and the forked child
-                    process. For some reason there only appears to be one, and
-                    rds_process seems to refer to that in both of the processes.
-            */
         }
     });
 

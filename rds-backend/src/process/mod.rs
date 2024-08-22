@@ -30,7 +30,7 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
             stdout = n;
         }
         None => {
-            return std::result::Result::Err(ProcessError::CannotGetStdout { path: seeker_path })
+            return std::result::Result::Err(ProcessError::CannotGetStdoutHandle { path: seeker_path })
         }
     }
     let mut reader = std::io::BufReader::new(stdout);
@@ -98,7 +98,7 @@ pub enum ProcessError {
         path: std::path::PathBuf,
         error: std::io::Error,
     },
-    CannotGetStdout {
+    CannotGetStdoutHandle {
         path: std::path::PathBuf,
     },
 }
@@ -107,7 +107,7 @@ impl std::error::Error for ProcessError {
         match *self {
             ProcessError::CannotSpawn { ref error, .. } => Some(error),
             ProcessError::CannotWait { ref error, .. } => Some(error),
-            ProcessError::CannotGetStdout { .. } => None,
+            ProcessError::CannotGetStdoutHandle { .. } => None,
         }
     }
 }
@@ -116,7 +116,7 @@ impl std::fmt::Display for ProcessError {
         match *self {
             ProcessError::CannotSpawn { ref path, .. } => write!(f, "cannot spawn {:?}", path),
             ProcessError::CannotWait { ref path, .. } => write!(f, "failed to wait {:?}", path),
-            ProcessError::CannotGetStdout { ref path } => write!(f, "cannot get STDOUT {:?}", path),
+            ProcessError::CannotGetStdoutHandle { ref path } => write!(f, "cannot get STDOUT {:?}", path),
         }
     }
 }

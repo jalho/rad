@@ -1,79 +1,26 @@
-pub fn get_age(pid: u32) -> std::time::Duration {
+/// Get the age of a process by PID.
+pub fn get_age(pid: u64) -> std::result::Result<std::time::Duration, ProcessError> {
     let arg: &str = &pid.to_string();
-    let elapsed_secs: u64;
-    match get_integer_value_with("ps", ["-o", "etimes=", "-p", arg].into()) {
-        Ok(n) => elapsed_secs = n,
-        Err(_) => todo!(),
-    }
-    return std::time::Duration::from_secs(elapsed_secs);
+    let n = get_integer_value_with("ps", vec!["-o", "etimes=", "-p", arg])?;
+    let elapsed_secs = std::time::Duration::from_secs(n);
+    return std::result::Result::Ok(elapsed_secs);
 }
 
 pub enum ProcStatus {
     Terminated,
-    Running(u32), // PID
+    Running(u64), // PID
 }
+/// Get process status by executable name.
 pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> {
-    let mut seeker: std::process::Child;
-    let seeker_path = std::path::PathBuf::from("pgrep");
-    match std::process::Command::new(&seeker_path)
-        .arg(seekable)
-        .stdout(std::process::Stdio::piped())
-        .spawn()
-    {
-        Ok(n) => seeker = n,
-        Err(err_io) => {
-            return std::result::Result::Err(ProcessError::CannotSpawn {
-                cause: err_io,
-                executable_path: seeker_path,
-            });
-        }
-    }
-    let stdout: std::process::ChildStdout;
-    match seeker.stdout.take() {
-        Some(n) => stdout = n,
-        None => {
-            return std::result::Result::Err(ProcessError::CannotGetStdoutHandle {
-                executable_path: seeker_path,
-            });
-        }
-    }
-    let mut reader = std::io::BufReader::new(stdout);
-
-    let status: std::process::ExitStatus;
-    match seeker.wait() {
-        Ok(n) => status = n,
-        Err(err_io) => {
-            return std::result::Result::Err(ProcessError::CannotWait {
-                cause: err_io,
-                executable_path: seeker_path,
-            });
-        }
-    }
-    if !status.success() {
-        return std::result::Result::Ok(ProcStatus::Terminated);
-    }
-
-    let pid: u32;
-    let mut line = String::new();
-    match std::io::BufRead::read_line(&mut reader, &mut line) {
-        Ok(_) => {}
-        Err(err_read) => {
-            return std::result::Result::Err(ProcessError::CannotReadStdout {
-                executable_path: seeker_path,
-                cause: err_read,
-            })
-        }
-    }
-    let line = line.trim();
-    match line.parse::<u32>() {
+    let pid: u64;
+    match get_integer_value_with("pgrep", vec![seekable]) {
         Ok(n) => pid = n,
-        Err(err_parse) => {
-            return std::result::Result::Err(ProcessError::CannotParseStdout {
-                executable_path: seeker_path,
-                input: line.into(),
-                cause: err_parse,
-            })
-        }
+        Err(err) => match err {
+            ProcessError::ErrorExitStatus { .. } => {
+                return std::result::Result::Ok(ProcStatus::Terminated)
+            }
+            _ => return std::result::Result::Err(err),
+        },
     }
     return std::result::Result::Ok(ProcStatus::Running(pid));
 }

@@ -57,7 +57,7 @@ fn main() -> std::result::Result<(), FatalError> {
     /*
         PID of the process running the game server.
     */
-    let pid_rds: u32;
+    let pid_rds: u64;
 
     match process::get_pid("RustDedicated") {
         Ok(process::ProcStatus::Terminated) => {
@@ -67,7 +67,7 @@ fn main() -> std::result::Result<(), FatalError> {
                 "[INFO] - Launched game server in an independent process with PID {}",
                 fork.pid
             );
-            pid_rds = fork.pid;
+            pid_rds = fork.pid.into();
         }
         Ok(process::ProcStatus::Running(pid)) => {
             println!(
@@ -84,7 +84,7 @@ fn main() -> std::result::Result<(), FatalError> {
     }
 
     let age = process::get_age(pid_rds); // TODO: remove this
-    println!("[DEBUG] - age: {:?}", age); // TODO: remove this
+    println!("[DEBUG] - age: {:?}", age.unwrap()); // TODO: remove this
 
     return std::result::Result::Ok(());
 }

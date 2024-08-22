@@ -14,9 +14,7 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
         .stdout(std::process::Stdio::piped())
         .spawn()
     {
-        Ok(n) => {
-            seeker = n;
-        }
+        Ok(n) => seeker = n,
         Err(err_io) => {
             return std::result::Result::Err(ProcessError::CannotSpawn {
                 cause: err_io,
@@ -26,22 +24,18 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
     }
     let stdout: std::process::ChildStdout;
     match seeker.stdout.take() {
-        Some(n) => {
-            stdout = n;
-        }
+        Some(n) => stdout = n,
         None => {
             return std::result::Result::Err(ProcessError::CannotGetStdoutHandle {
                 executable_path: seeker_path,
-            })
+            });
         }
     }
     let mut reader = std::io::BufReader::new(stdout);
 
     let status: std::process::ExitStatus;
     match seeker.wait() {
-        Ok(n) => {
-            status = n;
-        }
+        Ok(n) => status = n,
         Err(err_io) => {
             return std::result::Result::Err(ProcessError::CannotWait {
                 cause: err_io,
@@ -57,10 +51,6 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
     let mut line = String::new();
     match std::io::BufRead::read_line(&mut reader, &mut line) {
         Ok(_) => {}
-        /*
-            "pgrep" exited with successful status but we couldn't get its STDOUT
-            so I guess we panic!
-        */
         Err(err_read) => {
             return std::result::Result::Err(ProcessError::CannotReadStdout {
                 executable_path: seeker_path,
@@ -70,13 +60,7 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
     }
     let line = line.trim();
     match line.parse::<u32>() {
-        Ok(n) => {
-            pid = n;
-        }
-        /*
-            "pgrep" exited with successful status, yet STDOUT wasn't parseable
-            as integer so I guess we panic!
-        */
+        Ok(n) => pid = n,
         Err(err_parse) => {
             return std::result::Result::Err(ProcessError::CannotParseStdout {
                 executable_path: seeker_path,
@@ -89,8 +73,6 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
 
 /// Error variants related to process lifecycles because the standard library
 /// considers everything just an IO error.
-/// TODO: Add information about what was attempted somehow: at least the path of
-///       the executable!
 #[derive(Debug)]
 pub enum ProcessError {
     CannotSpawn {

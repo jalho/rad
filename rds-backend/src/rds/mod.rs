@@ -1,10 +1,17 @@
+pub struct Fork {
+    pub jh: std::thread::JoinHandle<()>,
+    pub pid: u32,
+}
+
 /// Launch RustDedicated game server in an independent process.
-pub fn rds_launch_fork() -> std::thread::JoinHandle<()> {
+pub fn rds_launch_fork() -> Fork {
+    let (tx, rx) = std::sync::mpsc::channel::<u32>();
+
     /*
       We're calling libc::fork here which duplicates the current thread, so we
       need a clean thread, therefore std::thread::spawn.
     */
-    let th = std::thread::spawn(move || {
+    let jh = std::thread::spawn(move || {
         /*
           PID of the forked process that creates yet another process that in
           turn runs the RustDedicated game server.
@@ -16,6 +23,12 @@ pub fn rds_launch_fork() -> std::thread::JoinHandle<()> {
         */
         let pid_final: u32;
 
+        let mut rds_command = std::process::Command::new("./RustDedicated");
+        let mut rds_process: std::process::Child;
+        rds_process = rds_command.spawn().unwrap();
+        pid_final = rds_process.id();
+        _ = tx.send(pid_final).unwrap(); // TODO: Handle properly!
+
         unsafe {
             /*
               Duplicate current process into an independent process.
@@ -25,25 +38,22 @@ pub fn rds_launch_fork() -> std::thread::JoinHandle<()> {
 
         // case "child": Run RustDedicated to termination
         if pid_intermediate == 0 {
-            let mut rds_command = std::process::Command::new("./RustDedicated");
-            let mut rds_process: std::process::Child;
-            rds_process = rds_command.spawn().unwrap();
-            pid_final = rds_process.id();
-            /*
-              TODO: Signal the final PID to the parent somehow? Now logged from
-                    the forked child process...
-            */
-            println!("[INFO] - Forked RustDedicated into PID {}", pid_final);
             _ = rds_process.wait();
         }
         // case "parent": Nothing to do!
         else {
             /*
-              Would be nice if we could have the value pid_final here, so we
-              could return that and e.g. make log about it from within the main
-              process.
+              TODO: Figure out why we shouldn't call rds_process.kill() here!
+                    AFAIK we should have 2 OS processes running RustDedicated at
+                    this point: the original parent process and the forked child
+                    process. For some reason there only appears to be one, and
+                    rds_process seems to refer to that in both of the processes.
             */
         }
     });
-    return th;
+
+    let pid_final = rx
+        .recv_timeout(std::time::Duration::from_millis(10))
+        .unwrap();
+    return Fork { jh, pid: pid_final };
 }

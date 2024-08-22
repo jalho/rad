@@ -51,5 +51,10 @@ mod rds;
 /// }
 /// ```
 fn main() {
-    _ = rds::rds_launch_fork().join();
+    let fork: rds::Fork = rds::rds_launch_fork();
+    _ = fork.jh.join();
+    println!(
+        "[INFO] - Forked RustDedicated into an independent process with PID {}",
+        fork.pid
+    );
 }

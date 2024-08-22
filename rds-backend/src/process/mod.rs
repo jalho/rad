@@ -79,6 +79,8 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
 
 /// Error variants related to process lifecycles because the standard library
 /// considers everything just an IO error.
+/// TODO: Add information about what was attempted somehow: at least the path of
+///       the executable!
 #[derive(Debug)]
 pub enum ProcessError {
     CannotSpawn(std::io::Error),
@@ -106,7 +108,7 @@ impl std::fmt::Display for ProcessError {
 }
 impl From<ProcessError> for crate::FatalError {
     fn from(value: ProcessError) -> Self {
-        return Self::B(value);
+        return Self::ExternalCommandError(value);
     }
 }
 
@@ -139,7 +141,7 @@ impl std::fmt::Display for ForkError {
 }
 impl From<ForkError> for crate::FatalError {
     fn from(value: ForkError) -> Self {
-        return Self::A(value);
+        return Self::GameServerForkError(value);
     }
 }
 

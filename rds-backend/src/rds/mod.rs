@@ -54,6 +54,6 @@ pub fn rds_launch_fork() -> Fork {
 
     let pid_final = rx
         .recv_timeout(std::time::Duration::from_millis(10))
-        .unwrap();
+        .unwrap(); // TODO: Handle properly!
     return Fork { jh, pid: pid_final };
 }

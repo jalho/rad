@@ -152,8 +152,8 @@ impl std::fmt::Display for ProcessError {
                 ..
             } => write!(
                 f,
-                "cannot parse integer from stdout '{}' of process from executable {:?}",
-                input, path
+                "cannot parse integer from stdout of process from executable {:?}: {}",
+                path, input
             ),
         }
     }

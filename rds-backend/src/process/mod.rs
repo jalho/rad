@@ -19,8 +19,8 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
         }
         Err(err_io) => {
             return std::result::Result::Err(ProcessError::CannotSpawn {
-                error: err_io,
-                path: seeker_path,
+                cause: err_io,
+                executable_path: seeker_path,
             });
         }
     }
@@ -31,7 +31,7 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
         }
         None => {
             return std::result::Result::Err(ProcessError::CannotGetStdoutHandle {
-                path: seeker_path,
+                executable_path: seeker_path,
             })
         }
     }
@@ -44,8 +44,8 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
         }
         Err(err_io) => {
             return std::result::Result::Err(ProcessError::CannotWait {
-                error: err_io,
-                path: seeker_path,
+                cause: err_io,
+                executable_path: seeker_path,
             });
         }
     }
@@ -63,8 +63,8 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
         */
         Err(err_read) => {
             return std::result::Result::Err(ProcessError::CannotReadStdout {
-                path: seeker_path,
-                error: err_read,
+                executable_path: seeker_path,
+                cause: err_read,
             })
         }
     }
@@ -78,11 +78,10 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
             as integer so I guess we panic!
         */
         Err(err_parse) => {
-            eprintln!(
-                "Could not parse STDOUT as integer: '{}': {:#?}",
-                line, err_parse
-            );
-            todo!();
+            return std::result::Result::Err(ProcessError::CannotParseStdout {
+                executable_path: seeker_path,
+                cause: err_parse,
+            })
         }
     }
     return std::result::Result::Ok(ProcStatus::Running(pid));
@@ -95,48 +94,80 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
 #[derive(Debug)]
 pub enum ProcessError {
     CannotSpawn {
-        path: std::path::PathBuf,
-        error: std::io::Error,
+        executable_path: std::path::PathBuf,
+        cause: std::io::Error,
     },
     CannotWait {
-        path: std::path::PathBuf,
-        error: std::io::Error,
+        executable_path: std::path::PathBuf,
+        cause: std::io::Error,
     },
     CannotGetStdoutHandle {
-        path: std::path::PathBuf,
+        executable_path: std::path::PathBuf,
     },
     CannotReadStdout {
-        path: std::path::PathBuf,
-        error: std::io::Error,
+        executable_path: std::path::PathBuf,
+        cause: std::io::Error,
+    },
+    CannotParseStdout {
+        executable_path: std::path::PathBuf,
+        cause: std::num::ParseIntError,
     },
 }
 impl std::error::Error for ProcessError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
-            ProcessError::CannotSpawn { ref error, .. } => Some(error),
-            ProcessError::CannotWait { ref error, .. } => Some(error),
+            ProcessError::CannotSpawn {
+                cause: ref error, ..
+            } => Some(error),
+            ProcessError::CannotWait {
+                cause: ref error, ..
+            } => Some(error),
             ProcessError::CannotGetStdoutHandle { .. } => None,
-            ProcessError::CannotReadStdout { ref error, .. } => Some(error),
+            ProcessError::CannotReadStdout {
+                cause: ref error, ..
+            } => Some(error),
+            ProcessError::CannotParseStdout {
+                cause: ref error, ..
+            } => Some(error),
         }
     }
 }
 impl std::fmt::Display for ProcessError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            ProcessError::CannotSpawn { ref path, .. } => {
+            ProcessError::CannotSpawn {
+                executable_path: ref path,
+                ..
+            } => {
                 write!(f, "cannot spawn process from executable {:?}", path)
             }
-            ProcessError::CannotWait { ref path, .. } => {
+            ProcessError::CannotWait {
+                executable_path: ref path,
+                ..
+            } => {
                 write!(f, "failed to wait process from executable {:?}", path)
             }
-            ProcessError::CannotGetStdoutHandle { ref path } => write!(
+            ProcessError::CannotGetStdoutHandle {
+                executable_path: ref path,
+            } => write!(
                 f,
                 "cannot get stdout handle of process from executable {:?}",
                 path
             ),
-            ProcessError::CannotReadStdout { ref path, .. } => write!(
+            ProcessError::CannotReadStdout {
+                executable_path: ref path,
+                ..
+            } => write!(
                 f,
                 "cannot read stdout of process from executable {:?}",
+                path
+            ),
+            ProcessError::CannotParseStdout {
+                executable_path: ref path,
+                ..
+            } => write!(
+                f,
+                "cannot parse integer from stdout of process from executable {:?}",
                 path
             ),
         }
@@ -218,8 +249,8 @@ pub fn launch_fork(executable_path: std::path::PathBuf) -> std::result::Result<F
                 send_result(
                     tx,
                     std::result::Result::Err(ForkError::Other(ProcessError::CannotSpawn {
-                        error: err_io,
-                        path: executable_path,
+                        cause: err_io,
+                        executable_path,
                     })),
                 );
                 return;

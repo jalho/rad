@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 pub fn get_age(pid: u32) -> std::time::Duration {
     todo!();
 }
@@ -10,7 +8,7 @@ pub enum ProcStatus {
 }
 pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, ProcessError> {
     let mut proc: std::process::Child;
-    let executable_path = PathBuf::from("pgrep");
+    let executable_path = std::path::PathBuf::from("pgrep");
     match std::process::Command::new(&executable_path)
         .arg(executable_name)
         .stdout(std::process::Stdio::piped())
@@ -97,11 +95,11 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
 #[derive(Debug)]
 pub enum ProcessError {
     CannotSpawn {
-        executable_path: PathBuf,
+        executable_path: std::path::PathBuf,
         error: std::io::Error,
     },
     CannotWait {
-        executable_path: PathBuf,
+        executable_path: std::path::PathBuf,
         error: std::io::Error,
     },
 }
@@ -180,7 +178,7 @@ pub struct Fork {
 }
 
 /// Launch a thing into an independent process.
-pub fn launch_fork(executable_path: PathBuf) -> std::result::Result<Fork, ForkError> {
+pub fn launch_fork(executable_path: std::path::PathBuf) -> std::result::Result<Fork, ForkError> {
     let (tx, rx) = std::sync::mpsc::channel::<std::result::Result<u32, ForkError>>();
 
     let jh = std::thread::spawn(move || {

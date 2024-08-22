@@ -51,7 +51,5 @@ mod rds;
 /// }
 /// ```
 fn main() {
-    println!("[DEBUG] - Calling rds::rds_launch");
-    rds::rds_launch();
-    println!("[DEBUG] - Returned from rds::rds_launch");
+    _ = rds::rds_launch_fork().join();
 }

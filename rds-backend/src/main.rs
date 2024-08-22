@@ -75,7 +75,6 @@ fn main() -> std::result::Result<(), FatalError> {
             pid_rds = pid;
         }
         Err(err_get_pid) => {
-            eprintln!("[ERROR] - Could not determine whether a game server process exists",);
             return std::result::Result::Err(err_get_pid.into());
         }
     }
@@ -99,6 +98,16 @@ impl std::error::Error for FatalError {
 }
 impl std::fmt::Display for FatalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        return write!(f, "FatalError",);
+        match *self {
+            FatalError::GameServerForkError(_) => {
+                return write!(
+                    f,
+                    "could not launch game server into an independent process"
+                );
+            }
+            FatalError::ExternalCommandError(_) => {
+                return write!(f, "failed to execute an external command");
+            }
+        }
     }
 }

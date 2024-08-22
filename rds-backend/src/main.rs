@@ -1,6 +1,5 @@
 mod log;
 mod process;
-mod rds;
 
 use crate::log::SourceLoggable;
 

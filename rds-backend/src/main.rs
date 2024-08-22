@@ -1,5 +1,5 @@
-mod rds;
 mod process;
+mod rds;
 
 /// First, the program checks if the Rust game server (executable name
 /// _RustDedicated_) is running, and starts it if not. If a new start is
@@ -57,8 +57,8 @@ fn main() -> std::result::Result<(), rds::ForkError> {
     */
     let pid_rds: u32;
 
-    match rds::rds_check_process() {
-        Ok(rds::ProcStatus::TERMINATED) => {
+    match process::get_pid("RustDedicated") {
+        Ok(process::ProcStatus::TERMINATED) => {
             let fork: rds::Fork = rds::rds_launch_fork()?;
             _ = fork.jh.join();
             println!(
@@ -67,7 +67,7 @@ fn main() -> std::result::Result<(), rds::ForkError> {
             );
             pid_rds = fork.pid;
         }
-        Ok(rds::ProcStatus::RUNNING(pid)) => {
+        Ok(process::ProcStatus::RUNNING(pid)) => {
             println!(
                 "[INFO] - Detected existing RustDedicated process with PID {}",
                 pid

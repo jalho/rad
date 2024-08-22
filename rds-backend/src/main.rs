@@ -1,4 +1,5 @@
 mod rds;
+mod process;
 
 /// First, the program checks if the Rust game server (executable name
 /// _RustDedicated_) is running, and starts it if not. If a new start is

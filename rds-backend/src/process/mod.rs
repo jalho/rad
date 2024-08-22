@@ -6,11 +6,7 @@ pub enum ProcStatus {
     TERMINATED,
     RUNNING(u32),
 }
-/// An error related to executing an external command.
-/// E.g. case couldn't spawn or wait "pgrep RustDedicated".
-#[derive(Debug)]
-pub struct ExtCommandError(std::io::Error);
-pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, ExtCommandError> {
+pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, std::io::Error> {
     let mut proc: std::process::Child;
     match std::process::Command::new("pgrep")
         .arg(executable_name)
@@ -20,7 +16,7 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, ExtComm
         Ok(n) => {
             proc = n;
         }
-        Err(err_io) => return std::result::Result::Err(ExtCommandError(err_io)),
+        Err(err_io) => return std::result::Result::Err(err_io),
     }
     let stdout: std::process::ChildStdout;
     match proc.stdout.take() {
@@ -42,7 +38,7 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, ExtComm
         Ok(n) => {
             pgrep_exit = n;
         }
-        Err(err_io) => return std::result::Result::Err(ExtCommandError(err_io)),
+        Err(err_io) => return std::result::Result::Err(err_io),
     }
     if !pgrep_exit.success() {
         return std::result::Result::Ok(ProcStatus::TERMINATED);
@@ -85,17 +81,17 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, ExtComm
 /// Errors related to forking a thing (RustDedicated game server) into an
 /// independent process.
 pub enum ForkError {
-    RX(std::sync::mpsc::RecvError),
-    IO(std::io::Error),
+    TransmitPID,
+    Spawn,
 }
 impl From<ForkError> for crate::FatalError {
     fn from(_value: ForkError) -> Self {
-        return Self::ForkError();
+        return Self::ForkError;
     }
 }
-impl From<ExtCommandError> for crate::FatalError {
-    fn from(_value: ExtCommandError) -> Self {
-        return Self::ExtCommandError();
+impl From<std::io::Error> for crate::FatalError {
+    fn from(_value: std::io::Error) -> Self {
+        return Self::ExtCommandError;
     }
 }
 
@@ -110,7 +106,7 @@ pub struct Fork {
 
 /// Launch a thing into an independent process.
 pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, ForkError> {
-    let (tx, rx) = std::sync::mpsc::channel::<std::result::Result<u32, std::io::Error>>();
+    let (tx, rx) = std::sync::mpsc::channel::<std::result::Result<u32, ForkError>>();
 
     let jh = std::thread::spawn(move || {
         /*
@@ -132,8 +128,8 @@ pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, F
             Ok(n) => {
                 process = n;
             }
-            Err(err) => {
-                send_result(tx, std::result::Result::Err(err));
+            Err(_) => {
+                send_result(tx, std::result::Result::Err(ForkError::Spawn));
                 return;
             }
         }
@@ -147,20 +143,17 @@ pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, F
             Ok(pid) => {
                 return std::result::Result::Ok(Fork { jh, pid });
             }
-            Err(err_io) => {
-                return std::result::Result::Err(ForkError::IO(err_io));
+            Err(err_fork) => {
+                return std::result::Result::Err(err_fork);
             }
         },
-        Err(err_rx) => {
-            return std::result::Result::Err(ForkError::RX(err_rx));
+        Err(_) => {
+            return std::result::Result::Err(ForkError::TransmitPID);
         }
     }
 }
 
-fn send_result(
-    sender: std::sync::mpsc::Sender<Result<u32, std::io::Error>>,
-    result: std::result::Result<u32, std::io::Error>,
-) {
+fn send_result<T>(sender: std::sync::mpsc::Sender<T>, result: T) {
     match sender.send(result) {
         Ok(_) => {}
         Err(err) => {

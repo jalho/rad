@@ -86,6 +86,6 @@ fn main() -> std::result::Result<(), FatalError> {
 /// The errors we may return with from main that we can't recover from.
 #[derive(Debug)]
 enum FatalError {
-    ForkError(),
-    ExtCommandError(),
+    ForkError,
+    ExtCommandError,
 }

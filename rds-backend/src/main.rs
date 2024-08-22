@@ -51,7 +51,7 @@ mod rds;
 ///     }
 /// }
 /// ```
-fn main() -> std::result::Result<(), rds::ForkError> {
+fn main() -> std::result::Result<(), process::ForkError> {
     /*
         PID of the process running RustDedicated game server.
     */
@@ -59,7 +59,7 @@ fn main() -> std::result::Result<(), rds::ForkError> {
 
     match process::get_pid("RustDedicated") {
         Ok(process::ProcStatus::TERMINATED) => {
-            let fork: rds::Fork = rds::rds_launch_fork()?;
+            let fork: process::Fork = process::launch_fork("./RustDedicated")?;
             _ = fork.jh.join();
             println!(
                 "[INFO] - Launched RustDedicated in an independent process with PID {}",

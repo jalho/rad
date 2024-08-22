@@ -8,7 +8,7 @@ pub enum ProcStatus {
 }
 pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> {
     let mut seeker: std::process::Child;
-    let seeker_path = std::path::PathBuf::from("echo"); // TODO: revert temp bug
+    let seeker_path = std::path::PathBuf::from("pgrep");
     match std::process::Command::new(&seeker_path)
         .arg(seekable)
         .stdout(std::process::Stdio::piped())

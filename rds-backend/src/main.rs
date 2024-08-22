@@ -1,6 +1,8 @@
+mod log;
 mod process;
 mod rds;
-mod log;
+
+use crate::log::SourceLoggable;
 
 /// First, the program checks if the Rust game server (executable name
 /// _RustDedicated_) is running, and starts it if not. If a new start is
@@ -76,10 +78,9 @@ fn main() -> std::result::Result<(), FatalError> {
             pid_rds = pid;
         }
         Err(err_get_pid) => {
-            let error = FatalError::from(err_get_pid);
-            log::log_error_with_source(error);
-            todo!();
-            // return std::result::Result::Err(error);
+            let error: FatalError = FatalError::from(err_get_pid);
+            error.log();
+            return std::result::Result::Err(error);
         }
     }
 
@@ -110,8 +111,9 @@ impl std::fmt::Display for FatalError {
                 );
             }
             FatalError::ExternalCommandError(_) => {
-                return write!(f, "failed to execute an external command");
+                return write!(f, "failed to execute external command");
             }
         }
     }
 }
+impl crate::log::SourceLoggable for crate::FatalError {}

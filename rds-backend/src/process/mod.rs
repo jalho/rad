@@ -30,7 +30,9 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
             stdout = n;
         }
         None => {
-            return std::result::Result::Err(ProcessError::CannotGetStdoutHandle { path: seeker_path })
+            return std::result::Result::Err(ProcessError::CannotGetStdoutHandle {
+                path: seeker_path,
+            })
         }
     }
     let mut reader = std::io::BufReader::new(stdout);
@@ -60,8 +62,10 @@ pub fn get_pid(seekable: &str) -> std::result::Result<ProcStatus, ProcessError> 
             so I guess we panic!
         */
         Err(err_read) => {
-            eprintln!("Could not read STDOUT: {:#?}", err_read);
-            todo!()
+            return std::result::Result::Err(ProcessError::CannotReadStdout {
+                path: seeker_path,
+                error: err_read,
+            })
         }
     }
     let line = line.trim();
@@ -101,6 +105,10 @@ pub enum ProcessError {
     CannotGetStdoutHandle {
         path: std::path::PathBuf,
     },
+    CannotReadStdout {
+        path: std::path::PathBuf,
+        error: std::io::Error,
+    },
 }
 impl std::error::Error for ProcessError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
@@ -108,15 +116,29 @@ impl std::error::Error for ProcessError {
             ProcessError::CannotSpawn { ref error, .. } => Some(error),
             ProcessError::CannotWait { ref error, .. } => Some(error),
             ProcessError::CannotGetStdoutHandle { .. } => None,
+            ProcessError::CannotReadStdout { ref error, .. } => Some(error),
         }
     }
 }
 impl std::fmt::Display for ProcessError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            ProcessError::CannotSpawn { ref path, .. } => write!(f, "cannot spawn {:?}", path),
-            ProcessError::CannotWait { ref path, .. } => write!(f, "failed to wait {:?}", path),
-            ProcessError::CannotGetStdoutHandle { ref path } => write!(f, "cannot get STDOUT {:?}", path),
+            ProcessError::CannotSpawn { ref path, .. } => {
+                write!(f, "cannot spawn process from executable {:?}", path)
+            }
+            ProcessError::CannotWait { ref path, .. } => {
+                write!(f, "failed to wait process from executable {:?}", path)
+            }
+            ProcessError::CannotGetStdoutHandle { ref path } => write!(
+                f,
+                "cannot get stdout handle of process from executable {:?}",
+                path
+            ),
+            ProcessError::CannotReadStdout { ref path, .. } => write!(
+                f,
+                "cannot read stdout of process from executable {:?}",
+                path
+            ),
         }
     }
 }

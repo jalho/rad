@@ -28,13 +28,25 @@ pub fn rds_launch_fork() -> Fork {
         */
         let rds_process: std::process::Child;
         rds_process = rds_command.spawn().unwrap();
-
         pid = rds_process.id();
-        _ = tx.send(pid).unwrap(); // TODO: Handle properly!
+
+        match tx.send(pid) {
+            Ok(_) => {
+                // Nothing to do!
+            }
+            Err(err) => {
+                handle_result_channel_err(err);
+            }
+        }
 
         return;
     });
 
     let pid = rx.recv().unwrap(); // TODO: Handle properly!
     return Fork { jh, pid };
+}
+
+/// If we can't use a results channel to send results, then we can only panic.
+fn handle_result_channel_err<T>(_err: std::sync::mpsc::SendError<T>) {
+    panic!();
 }

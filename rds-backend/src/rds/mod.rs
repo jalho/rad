@@ -1,3 +1,9 @@
+#[derive(Debug)]
+pub enum ForkError {
+    RX(std::sync::mpsc::RecvError),
+    IO(std::io::Error),
+}
+
 pub struct Fork {
     /// Not the JoinHandle for the RustDedicated game server process, but for
     /// the OS thread that created that process.
@@ -8,7 +14,7 @@ pub struct Fork {
 }
 
 /// Launch RustDedicated game server in an independent process.
-pub fn rds_launch_fork() -> Fork {
+pub fn rds_launch_fork() -> std::result::Result<Fork, ForkError> {
     let (tx, rx) = std::sync::mpsc::channel::<std::result::Result<u32, std::io::Error>>();
 
     let jh = std::thread::spawn(move || {
@@ -41,8 +47,19 @@ pub fn rds_launch_fork() -> Fork {
         return;
     });
 
-    let pid = rx.recv().unwrap().unwrap(); // TODO: Handle properly!
-    return Fork { jh, pid };
+    match rx.recv() {
+        Ok(n) => match n {
+            Ok(pid) => {
+                return std::result::Result::Ok(Fork { jh, pid });
+            }
+            Err(err_io) => {
+                return std::result::Result::Err(ForkError::IO(err_io));
+            }
+        },
+        Err(err_rx) => {
+            return std::result::Result::Err(ForkError::RX(err_rx));
+        }
+    }
 }
 
 fn send_result(

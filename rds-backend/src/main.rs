@@ -50,11 +50,23 @@ mod rds;
 ///     }
 /// }
 /// ```
-fn main() {
-    let fork: rds::Fork = rds::rds_launch_fork();
+fn main() -> std::result::Result<(), rds::ForkError> {
+    let fork: rds::Fork;
+    match rds::rds_launch_fork() {
+        Ok(n) => {
+            fork = n;
+        }
+        Err(err) => {
+            println!("[ERROR] - Could not fork RustDedicated into an independent process");
+            return std::result::Result::Err(err);
+        }
+    }
     _ = fork.jh.join();
+
     println!(
         "[INFO] - Forked RustDedicated into an independent process with PID {}",
         fork.pid
     );
+
+    return std::result::Result::Ok(());
 }

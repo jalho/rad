@@ -57,8 +57,8 @@ fn main() -> std::result::Result<(), FatalError> {
     */
     let pid_rds: u32;
 
-    match process::get_pid("RustDedicated")? {
-        process::ProcStatus::TERMINATED => {
+    match process::get_pid("RustDedicated") {
+        Ok(process::ProcStatus::TERMINATED) => {
             let fork: process::Fork = process::launch_fork("./RustDedicated")?;
             _ = fork.jh.join();
             println!(
@@ -67,13 +67,17 @@ fn main() -> std::result::Result<(), FatalError> {
             );
             pid_rds = fork.pid;
         }
-        process::ProcStatus::RUNNING(pid) => {
+        Ok(process::ProcStatus::RUNNING(pid)) => {
             println!(
                 "[INFO] - Detected existing RustDedicated process with PID {}",
                 pid
             );
             pid_rds = pid;
         }
+        Err(err_get_pid) => {
+            eprintln!("[ERROR] - Failed to use an external command for determining whether a game server process exists: {:#?}", err_get_pid);
+            return std::result::Result::Err(err_get_pid.into());
+        },
     }
 
     return std::result::Result::Ok(());

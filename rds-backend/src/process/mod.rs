@@ -3,10 +3,10 @@ pub fn get_age(pid: u32) -> std::time::Duration {
 }
 
 pub enum ProcStatus {
-    TERMINATED,
-    RUNNING(u32),
+    Terminated,
+    Running(u32),
 }
-pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, std::io::Error> {
+pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, ProcessError> {
     let mut proc: std::process::Child;
     match std::process::Command::new("pgrep")
         .arg(executable_name)
@@ -16,7 +16,7 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, std::io
         Ok(n) => {
             proc = n;
         }
-        Err(err_io) => return std::result::Result::Err(err_io),
+        Err(_) => return std::result::Result::Err(ProcessError::CannotSpawn),
     }
     let stdout: std::process::ChildStdout;
     match proc.stdout.take() {
@@ -38,10 +38,10 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, std::io
         Ok(n) => {
             pgrep_exit = n;
         }
-        Err(err_io) => return std::result::Result::Err(err_io),
+        Err(_) => return std::result::Result::Err(ProcessError::CannotWait),
     }
     if !pgrep_exit.success() {
-        return std::result::Result::Ok(ProcStatus::TERMINATED);
+        return std::result::Result::Ok(ProcStatus::Terminated);
     }
 
     let pid: u32;
@@ -74,24 +74,31 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, std::io
             todo!();
         }
     }
-    return std::result::Result::Ok(ProcStatus::RUNNING(pid));
+    return std::result::Result::Ok(ProcStatus::Running(pid));
 }
 
+/// Error variants related to process lifecycles because the standard library
+/// considers everything just an IO error.
 #[derive(Debug)]
+pub enum ProcessError {
+    CannotSpawn,
+    CannotWait,
+}
+
 /// Errors related to forking a thing (RustDedicated game server) into an
 /// independent process.
 pub enum ForkError {
-    TransmitPID,
-    Spawn,
+    CannotTransmitPID,
+    Other(ProcessError),
 }
 impl From<ForkError> for crate::FatalError {
     fn from(_value: ForkError) -> Self {
-        return Self::ForkError;
+        return Self;
     }
 }
-impl From<std::io::Error> for crate::FatalError {
-    fn from(_value: std::io::Error) -> Self {
-        return Self::ExtCommandError;
+impl From<ProcessError> for crate::FatalError {
+    fn from(_value: ProcessError) -> Self {
+        return Self;
     }
 }
 
@@ -129,7 +136,10 @@ pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, F
                 process = n;
             }
             Err(_) => {
-                send_result(tx, std::result::Result::Err(ForkError::Spawn));
+                send_result(
+                    tx,
+                    std::result::Result::Err(ForkError::Other(ProcessError::CannotSpawn)),
+                );
                 return;
             }
         }
@@ -148,7 +158,7 @@ pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, F
             }
         },
         Err(_) => {
-            return std::result::Result::Err(ForkError::TransmitPID);
+            return std::result::Result::Err(ForkError::CannotTransmitPID);
         }
     }
 }

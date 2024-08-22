@@ -58,7 +58,7 @@ fn main() -> std::result::Result<(), FatalError> {
     let pid_rds: u32;
 
     match process::get_pid("RustDedicated") {
-        Ok(process::ProcStatus::TERMINATED) => {
+        Ok(process::ProcStatus::Terminated) => {
             let fork: process::Fork = process::launch_fork("./RustDedicated")?;
             _ = fork.jh.join();
             println!(
@@ -67,7 +67,7 @@ fn main() -> std::result::Result<(), FatalError> {
             );
             pid_rds = fork.pid;
         }
-        Ok(process::ProcStatus::RUNNING(pid)) => {
+        Ok(process::ProcStatus::Running(pid)) => {
             println!(
                 "[INFO] - Detected existing game server process with PID {}",
                 pid
@@ -85,7 +85,4 @@ fn main() -> std::result::Result<(), FatalError> {
 
 /// The errors we may return with from main that we can't recover from.
 #[derive(Debug)]
-enum FatalError {
-    ForkError,
-    ExtCommandError,
-}
+struct FatalError;

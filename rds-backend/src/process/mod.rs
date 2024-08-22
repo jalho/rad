@@ -16,7 +16,7 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
         Ok(n) => {
             proc = n;
         }
-        Err(_) => return std::result::Result::Err(ProcessError::CannotSpawn),
+        Err(err_io) => return std::result::Result::Err(ProcessError::CannotSpawn(err_io)),
     }
     let stdout: std::process::ChildStdout;
     match proc.stdout.take() {
@@ -38,7 +38,7 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
         Ok(n) => {
             pgrep_exit = n;
         }
-        Err(_) => return std::result::Result::Err(ProcessError::CannotWait),
+        Err(err_io) => return std::result::Result::Err(ProcessError::CannotWait(err_io)),
     }
     if !pgrep_exit.success() {
         return std::result::Result::Ok(ProcStatus::Terminated);
@@ -81,24 +81,65 @@ pub fn get_pid(executable_name: &str) -> std::result::Result<ProcStatus, Process
 /// considers everything just an IO error.
 #[derive(Debug)]
 pub enum ProcessError {
-    CannotSpawn,
-    CannotWait,
+    CannotSpawn(std::io::Error),
+    CannotWait(std::io::Error),
+}
+impl std::error::Error for ProcessError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match *self {
+            ProcessError::CannotSpawn(ref e) => Some(e),
+            ProcessError::CannotWait(ref e) => Some(e),
+        }
+    }
+}
+impl std::fmt::Display for ProcessError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            ProcessError::CannotSpawn(_) => {
+                return write!(f, "CannotSpawn");
+            }
+            ProcessError::CannotWait(_) => {
+                return write!(f, "CannotWait");
+            }
+        }
+    }
+}
+impl From<ProcessError> for crate::FatalError {
+    fn from(value: ProcessError) -> Self {
+        return Self::B(value);
+    }
 }
 
 /// Errors related to forking a thing (RustDedicated game server) into an
 /// independent process.
+#[derive(Debug)]
 pub enum ForkError {
-    CannotTransmitPID,
+    CannotReceivePID(std::sync::mpsc::RecvError),
     Other(ProcessError),
 }
-impl From<ForkError> for crate::FatalError {
-    fn from(_value: ForkError) -> Self {
-        return Self;
+impl std::error::Error for ForkError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match *self {
+            ForkError::CannotReceivePID(ref e) => Some(e),
+            ForkError::Other(ref e) => Some(e),
+        }
     }
 }
-impl From<ProcessError> for crate::FatalError {
-    fn from(_value: ProcessError) -> Self {
-        return Self;
+impl std::fmt::Display for ForkError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            ForkError::CannotReceivePID(_) => {
+                return write!(f, "CannotTransmitPID");
+            }
+            ForkError::Other(_) => {
+                return write!(f, "Other");
+            }
+        }
+    }
+}
+impl From<ForkError> for crate::FatalError {
+    fn from(value: ForkError) -> Self {
+        return Self::A(value);
     }
 }
 
@@ -135,10 +176,10 @@ pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, F
             Ok(n) => {
                 process = n;
             }
-            Err(_) => {
+            Err(err_io) => {
                 send_result(
                     tx,
-                    std::result::Result::Err(ForkError::Other(ProcessError::CannotSpawn)),
+                    std::result::Result::Err(ForkError::Other(ProcessError::CannotSpawn(err_io))),
                 );
                 return;
             }
@@ -157,8 +198,8 @@ pub fn launch_fork(executable_path: &'static str) -> std::result::Result<Fork, F
                 return std::result::Result::Err(err_fork);
             }
         },
-        Err(_) => {
-            return std::result::Result::Err(ForkError::CannotTransmitPID);
+        Err(err_recv) => {
+            return std::result::Result::Err(ForkError::CannotReceivePID(err_recv));
         }
     }
 }

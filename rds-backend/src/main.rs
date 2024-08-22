@@ -1,3 +1,5 @@
+use std::error::Error;
+
 mod process;
 mod rds;
 
@@ -75,9 +77,12 @@ fn main() -> std::result::Result<(), FatalError> {
             pid_rds = pid;
         }
         Err(err_get_pid) => {
-            eprintln!("[ERROR] - Could not determine whether a game server process exists: {:#?}", err_get_pid);
+            eprintln!(
+                "[ERROR] - Could not determine whether a game server process exists: {:#?}",
+                err_get_pid
+            );
             return std::result::Result::Err(err_get_pid.into());
-        },
+        }
     }
 
     return std::result::Result::Ok(());
@@ -85,4 +90,24 @@ fn main() -> std::result::Result<(), FatalError> {
 
 /// The errors we may return with from main that we can't recover from.
 #[derive(Debug)]
-struct FatalError;
+enum FatalError {
+    A(process::ForkError),
+    B(process::ProcessError),
+}
+impl std::error::Error for FatalError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match *self {
+            FatalError::A(ref e) => Some(e),
+            FatalError::B(ref e) => Some(e),
+        }
+    }
+}
+impl std::fmt::Display for FatalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        return write!(
+            f,
+            "this is FatalError display impl... {}",
+            self.source().unwrap()
+        );
+    }
+}

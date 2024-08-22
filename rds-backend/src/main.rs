@@ -51,11 +51,23 @@ mod rds;
 /// }
 /// ```
 fn main() -> std::result::Result<(), rds::ForkError> {
-    let fork: rds::Fork = rds::rds_launch_fork()?;
-    _ = fork.jh.join();
-    println!(
-        "[INFO] - Launched RustDedicated in an independent process with PID {}",
-        fork.pid
-    );
+    match rds::rds_check_process() {
+        Ok(rds::ProcStatus::TERMINATED) => {
+            let fork: rds::Fork = rds::rds_launch_fork()?;
+            _ = fork.jh.join();
+            println!(
+                "[INFO] - Launched RustDedicated in an independent process with PID {}",
+                fork.pid
+            );
+        }
+        Ok(rds::ProcStatus::RUNNING(pid)) => {
+            println!(
+                "[INFO] - Detected existing RustDedicated process with PID {}",
+                pid
+            );
+        }
+        Err(_) => todo!(),
+    }
+
     return std::result::Result::Ok(());
 }
